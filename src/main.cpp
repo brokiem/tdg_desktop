@@ -930,6 +930,20 @@ int main() {
 
     const auto now = std::chrono::steady_clock::now();
 
+    // ── Safety Lock Heartbeat ─────────────────────────────────────────
+    static auto next_lock_pulse = now + std::chrono::milliseconds(3000);
+    if (use_gamepad && gamepad && safety_lock) {
+      if (now >= next_lock_pulse) {
+        // Very brief, low-intensity pulse every 3 seconds
+        // Doesn't wear out motors or drain battery
+        SDL_GameControllerRumble(gamepad, 0x0000, 0x2000, 50);
+        next_lock_pulse = now + std::chrono::milliseconds(3000);
+      }
+    } else {
+      // Keep pushing the timer forward when not locked
+      next_lock_pulse = now + std::chrono::milliseconds(3000);
+    }
+
     // ── Input polling ────────────────────────────────────────────────
     if (use_gamepad && gamepad && !safety_lock) {
       yaw = axis_to_wire(
