@@ -514,14 +514,25 @@ void DrawOSD(ImDrawList* dl, ImFont* osd_font, ImVec2 vmin, ImVec2 vmax, float f
     }
   };
 
+  ImU32 sig_col;
+  if (!stats.video_seen) {
+    sig_col = IM_COL32(255, 90, 90, 245); // Red (No Video)
+  } else if (rssi_pct > 60) {
+    sig_col = IM_COL32(140, 255, 140, 235); // Green (Good)
+  } else if (rssi_pct > 30) {
+    sig_col = IM_COL32(255, 235, 110, 235); // Yellow (Fair)
+  } else {
+    sig_col = IM_COL32(255, 90, 90, 235); // Red (Weak)
+  }
+
   // Soft horizontal luma dispersion (blur)
-  draw_signal_bars({bar_base.x - 1.5f, bar_base.y}, stats.video_seen ? osd : warn, 0.40f * icon_flicker);
-  draw_signal_bars({bar_base.x + 2.5f, bar_base.y}, stats.video_seen ? osd : warn, 0.40f * icon_flicker);
+  draw_signal_bars({bar_base.x - 1.5f, bar_base.y}, sig_col, 0.40f * icon_flicker);
+  draw_signal_bars({bar_base.x + 2.5f, bar_base.y}, sig_col, 0.40f * icon_flicker);
 
   // Main signal bars with analog luma flicker
-  draw_signal_bars(bar_base, stats.video_seen ? osd : warn, icon_flicker);
+  draw_signal_bars(bar_base, sig_col, icon_flicker);
 
-  add_analog_osd_text(rssi_pos, stats.video_seen ? osd : warn, rssi_buf, 8);
+  add_analog_osd_text(rssi_pos, sig_col, rssi_buf, 8);
 
   // The displayed clock only changes once per second; avoid localtime/strftime
   // on every render iteration (the main loop can run hundreds of times/sec).
