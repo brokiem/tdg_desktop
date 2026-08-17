@@ -911,7 +911,7 @@ int main() {
     const auto now = std::chrono::steady_clock::now();
 
     // ── Input polling ────────────────────────────────────────────────
-    if (use_gamepad && gamepad) {
+    if (use_gamepad && gamepad && !safety_lock) {
       yaw = axis_to_wire(
           SDL_GameControllerGetAxis(gamepad, SDL_CONTROLLER_AXIS_LEFTX));
       throttle = throttle_to_wire(
