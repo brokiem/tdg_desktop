@@ -893,6 +893,15 @@ int main() {
         if (btn == SDL_CONTROLLER_BUTTON_A) { 
           safety_lock = !safety_lock; 
           AddLog("[Gamepad] A Button -> Action: Safety Lock is %s", safety_lock ? "LOCKED" : "OFF");
+          if (gamepad) {
+            if (safety_lock) {
+              // Heavy, distinct thud for LOCKED
+              SDL_GameControllerRumble(gamepad, 0xFFFF, 0xFFFF, 300);
+            } else {
+              // Quick high-frequency buzz for UNLOCKED
+              SDL_GameControllerRumble(gamepad, 0x0000, 0xC000, 150);
+            }
+          }
         }
         
         if (!safety_lock) {
