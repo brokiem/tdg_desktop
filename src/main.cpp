@@ -143,21 +143,20 @@ void DrawVideoImage(ImDrawList* dl, GLuint texture,
   dl->PushClipRect(p0, p2, true);
 
   // 1. Warm Color Grade
-  // Multiply the image by a warm, filmic tint (slightly lowered blue/green)
-  dl->AddImageQuad(id, p0, p1, p2, p3, uv0, uv1, uv2, uv3, IM_COL32(255, 248, 238, 255));
+  // Keep the base image bright, just a tiny hint of warmth
+  dl->AddImageQuad(id, p0, p1, p2, p3, uv0, uv1, uv2, uv3, IM_COL32(255, 252, 248, 255));
 
   // 2. Chromatic Aberration & Lens Diffusion
-  // We apply faint cyan and red/orange offset passes.
-  // This softens the clinical digital sharpness and adds that analog fringing.
+  // Tints must be close to white so standard alpha blending doesn't crush the image brightness
   dl->AddImageQuad(id, 
       {p0.x - 1.5f, p0.y}, {p1.x - 1.5f, p1.y}, 
       {p2.x - 1.5f, p2.y}, {p3.x - 1.5f, p3.y}, 
-      uv0, uv1, uv2, uv3, IM_COL32(0, 220, 255, 45)); // Cyan fringe
+      uv0, uv1, uv2, uv3, IM_COL32(200, 255, 255, 20)); // Cyan fringe
 
   dl->AddImageQuad(id, 
       {p0.x + 1.5f, p0.y}, {p1.x + 1.5f, p1.y}, 
       {p2.x + 1.5f, p2.y}, {p3.x + 1.5f, p3.y}, 
-      uv0, uv1, uv2, uv3, IM_COL32(255, 60, 0, 45));  // Red fringe
+      uv0, uv1, uv2, uv3, IM_COL32(255, 200, 200, 20));  // Red fringe
 
   // 3. Halation / Bloom
   // Slightly scaled-up, highly transparent warm overlay to bleed highlights
@@ -165,11 +164,11 @@ void DrawVideoImage(ImDrawList* dl, GLuint texture,
   dl->AddImageQuad(id, 
       {p0.x - bloom, p0.y - bloom}, {p1.x + bloom, p1.y - bloom}, 
       {p2.x + bloom, p2.y + bloom}, {p3.x - bloom, p3.y + bloom}, 
-      uv0, uv1, uv2, uv3, IM_COL32(255, 130, 70, 28)); // Halation glow
+      uv0, uv1, uv2, uv3, IM_COL32(255, 220, 200, 18)); // Halation glow
 
   // 4. Lifted Blacks
-  // A faint dark grey-blue wash over everything lifts true blacks into a cinematic milkiness
-  dl->AddRectFilled(p0, p2, IM_COL32(18, 22, 30, 22));
+  // A very faint bright wash over everything lifts true blacks without darkening whites
+  dl->AddRectFilled(p0, p2, IM_COL32(230, 235, 255, 6));
 
   dl->PopClipRect();
 }
