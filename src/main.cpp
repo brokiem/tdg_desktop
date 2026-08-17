@@ -52,8 +52,8 @@ void AddLog(const char* fmt, ...) {
   va_start(args, fmt);
   vsnprintf(buf, sizeof(buf), fmt, args);
   va_end(args);
-  ui_logs.push_back(buf);
-  if (ui_logs.size() > 6) ui_logs.pop_front();
+  ui_logs.push_front(buf);
+  if (ui_logs.size() > 14) ui_logs.pop_back();
 }
 
 int GetRealWifiRssi() {
