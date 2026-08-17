@@ -1265,12 +1265,6 @@ int main() {
       ImGui::Spacing();
       ImGui::Spacing();
       
-      ImGui::TextColored({0.4f, 0.8f, 0.4f, 1.0f}, "CONNECTION");
-      ImGui::Separator();
-      ImGui::Text("Video: %s", stats.video_seen ? "RECEIVING" : "NO SIGNAL");
-      ImGui::Spacing();
-      ImGui::Spacing();
-
       ImGui::TextColored({0.4f, 0.8f, 0.4f, 1.0f}, "ACTION LOG");
       ImGui::Separator();
       for (const auto& log : ui_logs) {
