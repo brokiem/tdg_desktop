@@ -135,22 +135,47 @@ void DrawVideoImage(ImDrawList* dl, GLuint texture,
   const ImVec2 uv3 = rotated ? ImVec2{1.0f, 1.0f} : ImVec2{0.0f, 1.0f};
   const ImTextureID id = static_cast<ImTextureID>(texture);
 
-  // A cheap approximation of analog bandwidth loss: keep the original frame,
-  // then add one very faint horizontal luma echo. GL_LINEAR provides the actual
-  // softness; the echo only takes the digital edge off high-contrast details.
-  const ImU32 base_tint = analog_enabled
-      ? IM_COL32(248, 247, 241, 255)
-      : IM_COL32_WHITE;
-  dl->AddImageQuad(id, p0, p1, p2, p3, uv0, uv1, uv2, uv3, base_tint);
-
-  if (!analog_enabled) return;
+  if (!analog_enabled) {
+    dl->AddImageQuad(id, p0, p1, p2, p3, uv0, uv1, uv2, uv3, IM_COL32_WHITE);
+    return;
+  }
 
   dl->PushClipRect(p0, p2, true);
-  constexpr float kEchoX = 0.75f;
-  dl->AddImageQuad(id,
-      {p0.x + kEchoX, p0.y}, {p1.x + kEchoX, p1.y},
-      {p2.x + kEchoX, p2.y}, {p3.x + kEchoX, p3.y},
-      uv0, uv1, uv2, uv3, IM_COL32(255, 255, 248, 12));
+
+  // 1. Warm Color Grade
+  // Multiply the image by a warm, filmic tint (slightly lowered blue/green)
+  dl->AddImageQuad(id, p0, p1, p2, p3, uv0, uv1, uv2, uv3, IM_COL32(255, 248, 238, 255));
+
+  // 2. Chromatic Aberration & Lens Diffusion
+  // We apply faint cyan and red/orange offset passes.
+  // This softens the clinical digital sharpness and adds that analog fringing.
+  dl->AddImageQuad(id, 
+      {p0.x - 1.5f, p0.y}, {p1.x - 1.5f, p1.y}, 
+      {p2.x - 1.5f, p2.y}, {p3.x - 1.5f, p3.y}, 
+      uv0, uv1, uv2, uv3, IM_COL32(0, 220, 255, 45)); // Cyan fringe
+
+  dl->AddImageQuad(id, 
+      {p0.x + 1.5f, p0.y}, {p1.x + 1.5f, p1.y}, 
+      {p2.x + 1.5f, p2.y}, {p3.x + 1.5f, p3.y}, 
+      uv0, uv1, uv2, uv3, IM_COL32(255, 60, 0, 45));  // Red fringe
+
+  // 3. Halation / Bloom
+  // Slightly scaled-up, highly transparent warm overlay to bleed highlights
+  constexpr float bloom = 3.0f;
+  dl->AddImageQuad(id, 
+      {p0.x - bloom, p0.y - bloom}, {p1.x + bloom, p1.y - bloom}, 
+      {p2.x + bloom, p2.y + bloom}, {p3.x - bloom, p3.y + bloom}, 
+      uv0, uv1, uv2, uv3, IM_COL32(255, 130, 70, 28)); // Halation glow
+
+  // 4. Lifted Blacks
+  // A faint dark grey-blue wash over everything lifts true blacks into a cinematic milkiness
+  dl->AddRectFilled(p0, p2, IM_COL32(18, 22, 30, 22));
+
+  // 5. Sedikit Vignette (Subtle edge darkening)
+  // We draw overlapping thick transparent black borders
+  dl->AddRect(p0, p2, IM_COL32(0, 0, 0, 70), 0.0f, 0, 25.0f);
+  dl->AddRect({p0.x + 12.0f, p0.y + 12.0f}, {p2.x - 12.0f, p2.y - 12.0f}, IM_COL32(0, 0, 0, 30), 0.0f, 0, 25.0f);
+
   dl->PopClipRect();
 }
 
@@ -307,16 +332,14 @@ void DrawAnalogFilter(ImDrawList* dl, GLuint scanline_texture,
 
   dl->PushClipRect(vmin, vmax, true);
 
-  // Repeat a tiny alpha texture instead of submitting ~h/4 line primitives.
-  // Offset the V coordinate slowly to retain the subtle field movement.
+  // Sangat halus (very faint) texture to simulate organic analog grain, 
+  // instead of harsh VHS scanlines.
   const float phase_px = std::fmod(static_cast<float>(ImGui::GetTime()) * 0.35f, 4.0f);
   const float v0 = phase_px * 0.25f;
   const float v1 = v0 + h * 0.25f;
   dl->AddImage(static_cast<ImTextureID>(scanline_texture), vmin, vmax,
-               {0.0f, v0}, {1.0f, v1});
+               {0.0f, v0}, {1.0f, v1}, IM_COL32(255, 255, 255, 140));
 
-  // Slight edge loss resembles the imperfect active picture area of cheap FPV receivers.
-  dl->AddRect(vmin, vmax, IM_COL32(0, 0, 0, 80), 0.0f, 0, 1.0f);
   dl->PopClipRect();
 }
 
