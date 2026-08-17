@@ -1039,11 +1039,9 @@ int main() {
     // ── Column 2: Flight Dashboard ───────────────────────────────────
     ImGui::BeginChild("dashboard", {col2_w, bot_h}, true);
     {
-      ImGui::Checkbox("Use gamepad", &use_gamepad);
-      ImGui::SameLine();
-      ImGui::Checkbox("Analog Filter", &enable_analog_filter);
-      ImGui::SameLine();
-      if (ImGui::Button("View Keybinds")) ImGui::OpenPopup("Gamepad Legend");
+      // --- VIDEO & RECORDING ---
+      ImGui::TextColored({0.4f, 0.8f, 0.4f, 1.0f}, "VIDEO & OSD");
+      ImGui::Separator();
 
       bool processing_changed = ImGui::Checkbox("Image Enhance", &enable_video_enhance);
       if (enable_video_enhance) {
@@ -1054,6 +1052,20 @@ int main() {
         drone.set_video_enhancement(enable_video_enhance, enable_denoise,
                                     contrast_boost, saturation_boost);
       }
+      ImGui::SameLine();
+      ImGui::Checkbox("Analog Filter", &enable_analog_filter);
+
+      ImGui::AlignTextToFramePadding();
+      ImGui::Text("OSD Size:");
+      ImGui::SameLine();
+      if (ImGui::Button(" - ") && osd_text_scale > 0.5f) { osd_text_scale -= 0.1f; }
+      ImGui::SameLine();
+      ImGui::Text("%.0f%%", osd_text_scale * 100.0f);
+      ImGui::SameLine();
+      if (ImGui::Button(" + ") && osd_text_scale < 2.5f) { osd_text_scale += 0.1f; }
+      ImGui::SameLine();
+      ImGui::Dummy({10.0f, 0.0f});
+      ImGui::SameLine();
 
       if (!is_recording) {
         if (ImGui::Button("  Record  ")) toggle_recording();
@@ -1069,51 +1081,50 @@ int main() {
         ImGui::SameLine();
         ImGui::TextColored({0.9f, 0.3f, 0.3f, 1.0f}, "%s", rec_filename.c_str());
       }
+      ImGui::Spacing();
+      ImGui::Spacing();
 
-      ImGui::Text("OSD Size:");
+      // --- INPUT & STATUS ---
+      ImGui::TextColored({0.4f, 0.8f, 0.4f, 1.0f}, "INPUT & SYSTEM STATUS");
+      ImGui::Separator();
+
+      ImGui::Checkbox("Use gamepad", &use_gamepad);
       ImGui::SameLine();
-      if (ImGui::Button(" - ") && osd_text_scale > 0.5f) {
-        osd_text_scale -= 0.1f;
-      }
+      if (ImGui::Button("View Keybinds")) ImGui::OpenPopup("Gamepad Legend");
       ImGui::SameLine();
-      ImGui::Text("%.0f%%", osd_text_scale * 100.0f);
-      ImGui::SameLine();
-      if (ImGui::Button(" + ") && osd_text_scale < 2.5f) {
-        osd_text_scale += 0.1f;
-      }
+      ImGui::TextDisabled("| %s", gamepad ? SDL_GameControllerName(gamepad) : "Not connected");
 
       if (ImGui::BeginPopupModal("Gamepad Legend", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-          ImGui::TextColored({0.4f, 0.8f, 0.4f, 1.0f}, "Joysticks (Mode 2)");
-          ImGui::BulletText("Left Stick (Up): Throttle (0%% at center, 100%% at top)");
-          ImGui::BulletText("Left Stick (L/R): Yaw");
-          ImGui::BulletText("Right Stick (U/D): Pitch");
-          ImGui::BulletText("Right Stick (L/R): Roll");
-          ImGui::Spacing();
-          ImGui::TextColored({0.4f, 0.8f, 0.4f, 1.0f}, "Action Buttons");
-          ImGui::BulletText("A Button: Safety Lock (Toggle)");
-          ImGui::BulletText("B Button: Auto Land");
-          ImGui::BulletText("X Button: Emergency Stop");
-          ImGui::BulletText("Y Button: 360 Flip");
-          ImGui::Spacing();
-          ImGui::TextColored({0.4f, 0.8f, 0.4f, 1.0f}, "Bumpers & System");
-          ImGui::BulletText("LB Bumper: Lock Motors (Disarm)");
-          ImGui::BulletText("RB Bumper: Unlock Motors (Arm)");
-          ImGui::BulletText("Back Button: Calibrate Gyro");
-          ImGui::BulletText("Start Button: Toggle Headless Mode");
-          ImGui::Spacing();
-          ImGui::Separator();
-          if (ImGui::Button("Close", ImVec2(-1, 0))) { ImGui::CloseCurrentPopup(); }
-          ImGui::EndPopup();
+        ImGui::TextColored({0.4f, 0.8f, 0.4f, 1.0f}, "Joysticks (Mode 2)");
+        ImGui::BulletText("Left Stick (Up): Throttle (0%% at center, 100%% at top)");
+        ImGui::BulletText("Left Stick (L/R): Yaw");
+        ImGui::BulletText("Right Stick (U/D): Pitch");
+        ImGui::BulletText("Right Stick (L/R): Roll");
+        ImGui::Spacing();
+        ImGui::TextColored({0.4f, 0.8f, 0.4f, 1.0f}, "Action Buttons");
+        ImGui::BulletText("A Button: Safety Lock (Toggle)");
+        ImGui::BulletText("B Button: Auto Land");
+        ImGui::BulletText("X Button: Emergency Stop");
+        ImGui::BulletText("Y Button: 360 Flip");
+        ImGui::Spacing();
+        ImGui::TextColored({0.4f, 0.8f, 0.4f, 1.0f}, "Bumpers & System");
+        ImGui::BulletText("LB Bumper: Lock Motors (Disarm)");
+        ImGui::BulletText("RB Bumper: Unlock Motors (Arm)");
+        ImGui::BulletText("Back Button: Calibrate Gyro");
+        ImGui::BulletText("Start Button: Toggle Headless Mode");
+        ImGui::Spacing();
+        ImGui::Separator();
+        if (ImGui::Button("Close", ImVec2(-1, 0))) { ImGui::CloseCurrentPopup(); }
+        ImGui::EndPopup();
       }
 
-      ImGui::Text("Gamepad: %s",
-                  gamepad ? SDL_GameControllerName(gamepad) : "not connected");
-      
-      if (safety_lock)
+      ImGui::Text("Drone State: ");
+      ImGui::SameLine();
+      if (safety_lock) {
         ImGui::TextColored({0.95f, 0.20f, 0.20f, 1.0f}, "[SAFETY LOCKED]");
-      else
+      } else {
         ImGui::TextColored({0.20f, 0.85f, 0.20f, 1.0f}, "[SAFETY OFF]");
-
+      }
       if (headless_active) {
         ImGui::SameLine();
         ImGui::TextColored({0.0f, 0.85f, 0.85f, 1.0f}, "[HEADLESS]");
@@ -1122,73 +1133,67 @@ int main() {
         ImGui::SameLine();
         ImGui::TextColored({0.95f, 0.35f, 0.10f, 1.0f}, "[ARMED]");
       }
+      ImGui::Spacing();
+      ImGui::Spacing();
 
+      // --- FLIGHT CONTROLS ---
+      ImGui::TextColored({0.4f, 0.8f, 0.4f, 1.0f}, "FLIGHT COMMANDS");
       ImGui::Separator();
+
       ImGui::BeginDisabled(safety_lock);
 
-      // Primary flight controls
+      const float sp = ImGui::GetStyle().ItemSpacing.x;
       const float btn_w = ImGui::GetContentRegionAvail().x;
-      if (ColoredButton("LAND", {btn_w, 28},
-                         {0.20f, 0.45f, 0.88f, 1.0f})) {
+      if (ColoredButton("LAND", {btn_w, 28}, {0.20f, 0.45f, 0.88f, 1.0f})) {
         pulse_flags |= 0x02;
         pulse_until = now + std::chrono::milliseconds(180);
       }
       ImGui::Spacing();
-      if (ColoredButton("!! EMERGENCY STOP !!", {btn_w, 36},
-                         {0.88f, 0.12f, 0.12f, 1.0f})) {
+      if (ColoredButton("!! EMERGENCY STOP !!", {btn_w, 36}, {0.88f, 0.12f, 0.12f, 1.0f})) {
         pulse_flags |= 0x04;
         pulse_until = now + std::chrono::milliseconds(180);
       }
-
       ImGui::Separator();
 
-      // Command buttons (2 per row)
       const float half_w = (btn_w - sp) * 0.5f;
-      if (ColoredButton("360 FLIP", {half_w, 24},
-                         {0.85f, 0.55f, 0.10f, 1.0f})) {
+      if (ColoredButton("360 FLIP", {half_w, 24}, {0.85f, 0.55f, 0.10f, 1.0f})) {
         pulse_flags |= 0x08;
         pulse_until = now + std::chrono::milliseconds(180);
       }
       ImGui::SameLine();
       {
-        ImVec4 hl_col = headless_active
-            ? ImVec4(0.10f, 0.72f, 0.75f, 1.0f)
-            : ImVec4(0.35f, 0.38f, 0.42f, 1.0f);
-        if (ColoredButton(headless_active ? "HEADLESS [ON]" : "HEADLESS [OFF]",
-                           {half_w, 24}, hl_col)) {
+        ImVec4 hl_col = headless_active ? ImVec4(0.10f, 0.72f, 0.75f, 1.0f) : ImVec4(0.35f, 0.38f, 0.42f, 1.0f);
+        if (ColoredButton(headless_active ? "HEADLESS [ON]" : "HEADLESS [OFF]", {half_w, 24}, hl_col)) {
           pulse_flags |= 0x10;
           headless_active = !headless_active;
           pulse_until = now + std::chrono::milliseconds(180);
         }
       }
 
-      if (ColoredButton("LOCK MOTORS", {half_w, 24},
-                         {0.55f, 0.28f, 0.78f, 1.0f})) {
+      if (ColoredButton("LOCK MOTORS", {half_w, 24}, {0.55f, 0.28f, 0.78f, 1.0f})) {
         pulse_flags |= 0x20;
         motors_armed = false;
         pulse_until = now + std::chrono::milliseconds(180);
       }
       ImGui::SameLine();
-      if (ColoredButton("UNLOCK MOTORS", {half_w, 24},
-                         {0.78f, 0.50f, 0.15f, 1.0f})) {
+      if (ColoredButton("UNLOCK MOTORS", {half_w, 24}, {0.78f, 0.50f, 0.15f, 1.0f})) {
         pulse_flags |= 0x40;
         motors_armed = true;
         pulse_until = now + std::chrono::milliseconds(180);
       }
 
-      if (ColoredButton("CALIBRATE GYRO", {half_w, 24},
-                         {0.80f, 0.78f, 0.15f, 1.0f})) {
+      if (ColoredButton("CALIBRATE GYRO", {half_w, 24}, {0.80f, 0.78f, 0.15f, 1.0f})) {
         pulse_flags |= 0x80;
         pulse_until = now + std::chrono::milliseconds(180);
       }
       ImGui::SameLine();
-      if (ImGui::Button("Rotate Image", {half_w, 24}))
+      if (ImGui::Button("Rotate Image", {half_w, 24})) {
         drone.command(tdg::direct::CameraCommand::Rotate);
+      }
 
       ImGui::EndDisabled();
       ImGui::Separator();
-      ImGui::TextColored({1.0f, 0.70f, 0.20f, 1.0f},
-                         "! Xbox: Left stick springs to center.");
+      ImGui::TextColored({1.0f, 0.70f, 0.20f, 1.0f}, "! Xbox: Left stick springs to center.");
       ImGui::TextWrapped("Throttle uses left stick Y-axis (Mode 2).");
     }
     ImGui::EndChild();
@@ -1197,12 +1202,16 @@ int main() {
     // ── Column 3: Telemetry ──────────────────────────────────────────
     ImGui::BeginChild("telemetry", {0, bot_h}, true);
     {
-      ImGui::TextUnformatted("TELEMETRY");
+      ImGui::TextColored({0.4f, 0.8f, 0.4f, 1.0f}, "TRANSMITTER");
       ImGui::Separator();
       ImGui::SliderScalar("Roll",     ImGuiDataType_U8, &roll,     &kMin, &kMax);
       ImGui::SliderScalar("Pitch",    ImGuiDataType_U8, &pitch,    &kMin, &kMax);
       ImGui::SliderScalar("Throttle", ImGuiDataType_U8, &throttle, &kMin, &kMax);
-      ImGui::SliderScalar("Yaw",      ImGuiDataType_U8, &yaw,     &kMin, &kMax);
+      ImGui::SliderScalar("Yaw",      ImGuiDataType_U8, &yaw,      &kMin, &kMax);
+      ImGui::Spacing();
+      ImGui::Spacing();
+      
+      ImGui::TextColored({0.4f, 0.8f, 0.4f, 1.0f}, "DIAGNOSTICS");
       ImGui::Separator();
       ImGui::Text("Camera FPS:   %.1f", camera_fps);
       ImGui::Text("Display FPS:  %.1f", display_fps);
@@ -1213,12 +1222,16 @@ int main() {
       ImGui::Text("Discards:     %u", stats.discarded);
       ImGui::Text("Decode err:   %u", stats.decode_errors);
       ImGui::Text("JPEG dropped: %u", stats.dropped_jpegs);
-      if (is_recording || recorder.dropped() != 0)
+      if (is_recording || recorder.dropped() != 0) {
         ImGui::Text("REC dropped:  %u", recorder.dropped());
+      }
       ImGui::Text("Video starts: %u", stats.video_restarts);
+      ImGui::Spacing();
+      ImGui::Spacing();
+      
+      ImGui::TextColored({0.4f, 0.8f, 0.4f, 1.0f}, "CONNECTION");
       ImGui::Separator();
-      ImGui::Text("Video: %s",
-                  stats.video_seen ? "RECEIVING" : "NO SIGNAL");
+      ImGui::Text("Video: %s", stats.video_seen ? "RECEIVING" : "NO SIGNAL");
     }
     ImGui::EndChild();
     } // end if (view_mode != 2)
