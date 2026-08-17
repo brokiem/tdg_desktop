@@ -352,25 +352,29 @@ void DrawOSD(ImDrawList* dl, ImFont* osd_font, ImVec2 vmin, ImVec2 vmax, float f
   const float time = static_cast<float>(ImGui::GetTime());
 
   auto add_analog_osd_text = [&](ImVec2 pos, ImU32 color, const char* text, int elem_id) {
-    // Slower jiggle (1.5 Hz - 4.0 Hz)
-    float step_rate = 1.5f + static_cast<float>((elem_id * 7 + 11) % 6) * 0.5f;
-    float time_warp = time + std::sin(time * 0.5f + elem_id) * 0.5f;
-    uint32_t step = static_cast<uint32_t>(time_warp * step_rate + static_cast<float>(elem_id * 17));
+    // Very slow base rate (0.5 Hz - 1.5 Hz)
+    float step_rate = 0.5f + static_cast<float>((elem_id * 7 + 11) % 5) * 0.25f;
+    // Heavy time warping using chaotic sine waves for unpredictable jump intervals
+    float chaotic_time = time 
+                         + std::sin(time * 1.3f + elem_id) * 1.2f 
+                         + std::sin(time * 0.7f - elem_id * 2.0f) * 0.8f;
+
+    uint32_t step = static_cast<uint32_t>(chaotic_time * step_rate + static_cast<float>(elem_id * 17));
 
     // Integer RNG seed derived strictly from step + elem_id (stable across changing string numbers!)
     uint32_t rng = (step * 1103515245 + static_cast<uint32_t>(elem_id) * 2654435761u) & 0x7fffffff;
 
-    // More random H-Sync Jitter (-2.0px to +2.0px)
+    // More random H-Sync Jitter (-3.0px to +3.0px), rests at 0 more often
     float text_jitter = 0.0f;
-    uint32_t j_mod = (rng >> 3) % 17;
-    if (j_mod == 1) text_jitter = -2.0f;
-    else if (j_mod == 2) text_jitter = -1.5f;
+    uint32_t j_mod = (rng >> 3) % 23;
+    if (j_mod == 1) text_jitter = -3.0f;
+    else if (j_mod == 2) text_jitter = -2.0f;
     else if (j_mod == 3) text_jitter = -1.0f;
     else if (j_mod == 4) text_jitter = -0.5f;
     else if (j_mod == 5) text_jitter = 0.5f;
     else if (j_mod == 6) text_jitter = 1.0f;
-    else if (j_mod == 7) text_jitter = 1.5f;
-    else if (j_mod == 8) text_jitter = 2.0f;
+    else if (j_mod == 7) text_jitter = 2.0f;
+    else if (j_mod == 8) text_jitter = 3.0f;
 
     // Discrete RF Luma Flicker (opacity drops)
     float text_flicker = 1.0f;
@@ -444,21 +448,23 @@ void DrawOSD(ImDrawList* dl, ImFont* osd_font, ImVec2 vmin, ImVec2 vmax, float f
 
   // Compute Slot 8 jitter & flicker for the signal icon + percentage
   const int elem_id = 8;
-  float step_rate = 1.5f + static_cast<float>((elem_id * 7 + 11) % 6) * 0.5f;
-  float time_warp = time + std::sin(time * 0.5f + elem_id) * 0.5f;
-  uint32_t step = static_cast<uint32_t>(time_warp * step_rate + static_cast<float>(elem_id * 17));
+  float step_rate = 0.5f + static_cast<float>((elem_id * 7 + 11) % 5) * 0.25f;
+  float chaotic_time = time 
+                       + std::sin(time * 1.3f + elem_id) * 1.2f 
+                       + std::sin(time * 0.7f - elem_id * 2.0f) * 0.8f;
+  uint32_t step = static_cast<uint32_t>(chaotic_time * step_rate + static_cast<float>(elem_id * 17));
   uint32_t rng = (step * 1103515245 + static_cast<uint32_t>(elem_id) * 2654435761u) & 0x7fffffff;
 
   float icon_jitter = 0.0f;
-  uint32_t j_mod = (rng >> 3) % 17;
-  if (j_mod == 1) icon_jitter = -2.0f;
-  else if (j_mod == 2) icon_jitter = -1.5f;
+  uint32_t j_mod = (rng >> 3) % 23;
+  if (j_mod == 1) icon_jitter = -3.0f;
+  else if (j_mod == 2) icon_jitter = -2.0f;
   else if (j_mod == 3) icon_jitter = -1.0f;
   else if (j_mod == 4) icon_jitter = -0.5f;
   else if (j_mod == 5) icon_jitter = 0.5f;
   else if (j_mod == 6) icon_jitter = 1.0f;
-  else if (j_mod == 7) icon_jitter = 1.5f;
-  else if (j_mod == 8) icon_jitter = 2.0f;
+  else if (j_mod == 7) icon_jitter = 2.0f;
+  else if (j_mod == 8) icon_jitter = 3.0f;
 
   float icon_flicker = 1.0f;
   uint32_t f_mod = (rng >> 7) % 7;
