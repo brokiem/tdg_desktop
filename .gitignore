@@ -1,0 +1,54 @@
+# Build directories
+build/
+out/
+cmake-build-*/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+
+# Compiled binaries and libraries
+*.o
+*.a
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+*.out
+*.app
+*.lib
+
+# Dependency directories (fetched by CMake FetchContent etc.)
+_deps/
+
+# ImGui layout config (optional to track)
+imgui.ini
+
+# IDE / Editor configs
+.vscode/
+.idea/
+*.user
+*.suo
+*.sln.docstates
+*.ncb
+*.aps
+.DS_Store
+Thumbs.db
+
+# Clangd / compile_commands
+compile_commands.json
+.cache/
+
+# Video recordings / large media
+*.mp4
+*.mkv
+*.avi
+*.mov
+
+# Logs
+*.log
