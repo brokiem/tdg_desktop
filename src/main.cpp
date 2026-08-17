@@ -171,11 +171,6 @@ void DrawVideoImage(ImDrawList* dl, GLuint texture,
   // A faint dark grey-blue wash over everything lifts true blacks into a cinematic milkiness
   dl->AddRectFilled(p0, p2, IM_COL32(18, 22, 30, 22));
 
-  // 5. Sedikit Vignette (Subtle edge darkening)
-  // We draw overlapping thick transparent black borders
-  dl->AddRect(p0, p2, IM_COL32(0, 0, 0, 70), 0.0f, 0, 25.0f);
-  dl->AddRect({p0.x + 12.0f, p0.y + 12.0f}, {p2.x - 12.0f, p2.y - 12.0f}, IM_COL32(0, 0, 0, 30), 0.0f, 0, 25.0f);
-
   dl->PopClipRect();
 }
 
