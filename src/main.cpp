@@ -817,23 +817,37 @@ int main() {
         if (btn == SDL_CONTROLLER_BUTTON_DPAD_UP ||
             btn == SDL_CONTROLLER_BUTTON_DPAD_LEFT ||
             btn == SDL_CONTROLLER_BUTTON_DPAD_RIGHT) {
+          std::printf("[Gamepad] DPAD UP/L/R pressed -> Action: Cycle view mode\n");
           view_mode = (view_mode + 1) % 3;
         }
         if (btn == SDL_CONTROLLER_BUTTON_DPAD_DOWN) {
+          std::printf("[Gamepad] DPAD DOWN pressed -> Action: Toggle recording\n");
           toggle_recording();
         }
-        if (btn == SDL_CONTROLLER_BUTTON_A) { safety_lock = !safety_lock; }
+        if (btn == SDL_CONTROLLER_BUTTON_A) { 
+          safety_lock = !safety_lock; 
+          std::printf("[Gamepad] A Button pressed -> Action: Safety Lock is now %s\n", safety_lock ? "LOCKED" : "OFF");
+        }
         
         if (!safety_lock) {
-          if (btn == SDL_CONTROLLER_BUTTON_B) pulse_flags |= 0x02;              // Land
-          if (btn == SDL_CONTROLLER_BUTTON_X) pulse_flags |= 0x04;              // Emergency
-          if (btn == SDL_CONTROLLER_BUTTON_Y) pulse_flags |= 0x08;              // 360 Flip
-          if (btn == SDL_CONTROLLER_BUTTON_LEFTSHOULDER)  { pulse_flags |= 0x20; motors_armed = false; }  // Lock
-          if (btn == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER) { pulse_flags |= 0x40; motors_armed = true;  }  // Unlock
-          if (btn == SDL_CONTROLLER_BUTTON_BACK)  pulse_flags |= 0x80;          // Calibrate Gyro
-          if (btn == SDL_CONTROLLER_BUTTON_START) { pulse_flags |= 0x10; headless_active = !headless_active; }  // Headless
+          if (btn == SDL_CONTROLLER_BUTTON_B) { pulse_flags |= 0x02; std::printf("[Gamepad] B Button pressed -> Action: Auto Land\n"); }
+          if (btn == SDL_CONTROLLER_BUTTON_X) { pulse_flags |= 0x04; std::printf("[Gamepad] X Button pressed -> Action: Emergency Stop\n"); }
+          if (btn == SDL_CONTROLLER_BUTTON_Y) { pulse_flags |= 0x08; std::printf("[Gamepad] Y Button pressed -> Action: 360 Flip\n"); }
+          if (btn == SDL_CONTROLLER_BUTTON_LEFTSHOULDER)  { pulse_flags |= 0x20; motors_armed = false; std::printf("[Gamepad] LB Bumper pressed -> Action: Lock Motors (Disarm)\n"); }
+          if (btn == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER) { pulse_flags |= 0x40; motors_armed = true;  std::printf("[Gamepad] RB Bumper pressed -> Action: Unlock Motors (Arm)\n"); }
+          if (btn == SDL_CONTROLLER_BUTTON_BACK)  { pulse_flags |= 0x80; std::printf("[Gamepad] BACK Button pressed -> Action: Calibrate Gyro\n"); }
+          if (btn == SDL_CONTROLLER_BUTTON_START) { pulse_flags |= 0x10; headless_active = !headless_active; std::printf("[Gamepad] START Button pressed -> Action: Headless Mode %s\n", headless_active ? "ON" : "OFF"); }
+          if (btn == SDL_CONTROLLER_BUTTON_GUIDE) { std::printf("[Gamepad] GUIDE/HOME Button pressed -> No action mapped\n"); }
           if (btn != SDL_CONTROLLER_BUTTON_A) {
             pulse_until = std::chrono::steady_clock::now() + std::chrono::milliseconds(180);
+          }
+        } else {
+          if (btn != SDL_CONTROLLER_BUTTON_A && 
+              btn != SDL_CONTROLLER_BUTTON_DPAD_UP && 
+              btn != SDL_CONTROLLER_BUTTON_DPAD_DOWN && 
+              btn != SDL_CONTROLLER_BUTTON_DPAD_LEFT && 
+              btn != SDL_CONTROLLER_BUTTON_DPAD_RIGHT) {
+            std::printf("[Gamepad] Button %d pressed, but ignored -> Action: Safety lock is ON\n", static_cast<int>(btn));
           }
         }
       }
