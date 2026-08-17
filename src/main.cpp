@@ -14,6 +14,8 @@
 #include <thread>
 #include <utility>
 #include <vector>
+#include <deque>
+#include <cstdarg>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
@@ -32,6 +34,26 @@ std::uint8_t axis_to_wire(Sint16 value, bool invert = false) {
   if (invert) n = -n;
   if (n > -0.08f && n < 0.08f) n = 0.0f;
   return static_cast<std::uint8_t>(std::clamp(128.0f + n * 127.0f, 0.0f, 255.0f));
+}
+
+std::uint8_t throttle_to_wire(Sint16 value, bool invert = false) {
+  float n = static_cast<float>(value) / 32767.0f;
+  if (invert) n = -n;
+  if (n > -0.08f && n < 0.08f) n = 0.0f;
+  // Xbox gamepad springs to center. Center maps to 0. Top maps to 255.
+  return static_cast<std::uint8_t>(std::clamp(n * 255.0f, 0.0f, 255.0f));
+}
+
+std::deque<std::string> ui_logs;
+
+void AddLog(const char* fmt, ...) {
+  char buf[256];
+  va_list args;
+  va_start(args, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, args);
+  va_end(args);
+  ui_logs.push_back(buf);
+  if (ui_logs.size() > 6) ui_logs.pop_front();
 }
 
 int GetRealWifiRssi() {
@@ -817,27 +839,27 @@ int main() {
         if (btn == SDL_CONTROLLER_BUTTON_DPAD_UP ||
             btn == SDL_CONTROLLER_BUTTON_DPAD_LEFT ||
             btn == SDL_CONTROLLER_BUTTON_DPAD_RIGHT) {
-          std::printf("[Gamepad] DPAD UP/L/R pressed -> Action: Cycle view mode\n");
+          AddLog("[Gamepad] DPAD UP/L/R -> Action: Cycle view mode");
           view_mode = (view_mode + 1) % 3;
         }
         if (btn == SDL_CONTROLLER_BUTTON_DPAD_DOWN) {
-          std::printf("[Gamepad] DPAD DOWN pressed -> Action: Toggle recording\n");
+          AddLog("[Gamepad] DPAD DOWN -> Action: Toggle recording");
           toggle_recording();
         }
         if (btn == SDL_CONTROLLER_BUTTON_A) { 
           safety_lock = !safety_lock; 
-          std::printf("[Gamepad] A Button pressed -> Action: Safety Lock is now %s\n", safety_lock ? "LOCKED" : "OFF");
+          AddLog("[Gamepad] A Button -> Action: Safety Lock is %s", safety_lock ? "LOCKED" : "OFF");
         }
         
         if (!safety_lock) {
-          if (btn == SDL_CONTROLLER_BUTTON_B) { pulse_flags |= 0x02; std::printf("[Gamepad] B Button pressed -> Action: Auto Land\n"); }
-          if (btn == SDL_CONTROLLER_BUTTON_X) { pulse_flags |= 0x04; std::printf("[Gamepad] X Button pressed -> Action: Emergency Stop\n"); }
-          if (btn == SDL_CONTROLLER_BUTTON_Y) { pulse_flags |= 0x08; std::printf("[Gamepad] Y Button pressed -> Action: 360 Flip\n"); }
-          if (btn == SDL_CONTROLLER_BUTTON_LEFTSHOULDER)  { pulse_flags |= 0x20; motors_armed = false; std::printf("[Gamepad] LB Bumper pressed -> Action: Lock Motors (Disarm)\n"); }
-          if (btn == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER) { pulse_flags |= 0x40; motors_armed = true;  std::printf("[Gamepad] RB Bumper pressed -> Action: Unlock Motors (Arm)\n"); }
-          if (btn == SDL_CONTROLLER_BUTTON_BACK)  { pulse_flags |= 0x80; std::printf("[Gamepad] BACK Button pressed -> Action: Calibrate Gyro\n"); }
-          if (btn == SDL_CONTROLLER_BUTTON_START) { pulse_flags |= 0x10; headless_active = !headless_active; std::printf("[Gamepad] START Button pressed -> Action: Headless Mode %s\n", headless_active ? "ON" : "OFF"); }
-          if (btn == SDL_CONTROLLER_BUTTON_GUIDE) { std::printf("[Gamepad] GUIDE/HOME Button pressed -> No action mapped\n"); }
+          if (btn == SDL_CONTROLLER_BUTTON_B) { pulse_flags |= 0x02; AddLog("[Gamepad] B Button -> Action: Auto Land"); }
+          if (btn == SDL_CONTROLLER_BUTTON_X) { pulse_flags |= 0x04; AddLog("[Gamepad] X Button -> Action: Emergency Stop"); }
+          if (btn == SDL_CONTROLLER_BUTTON_Y) { pulse_flags |= 0x08; AddLog("[Gamepad] Y Button -> Action: 360 Flip"); }
+          if (btn == SDL_CONTROLLER_BUTTON_LEFTSHOULDER)  { pulse_flags |= 0x20; motors_armed = false; AddLog("[Gamepad] LB Bumper -> Action: Lock Motors"); }
+          if (btn == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER) { pulse_flags |= 0x40; motors_armed = true;  AddLog("[Gamepad] RB Bumper -> Action: Unlock Motors"); }
+          if (btn == SDL_CONTROLLER_BUTTON_BACK)  { pulse_flags |= 0x80; AddLog("[Gamepad] BACK -> Action: Calibrate Gyro"); }
+          if (btn == SDL_CONTROLLER_BUTTON_START) { pulse_flags |= 0x10; headless_active = !headless_active; AddLog("[Gamepad] START -> Action: Headless %s", headless_active ? "ON" : "OFF"); }
+          if (btn == SDL_CONTROLLER_BUTTON_GUIDE) { AddLog("[Gamepad] HOME -> No action mapped"); }
           if (btn != SDL_CONTROLLER_BUTTON_A) {
             pulse_until = std::chrono::steady_clock::now() + std::chrono::milliseconds(180);
           }
@@ -847,7 +869,7 @@ int main() {
               btn != SDL_CONTROLLER_BUTTON_DPAD_DOWN && 
               btn != SDL_CONTROLLER_BUTTON_DPAD_LEFT && 
               btn != SDL_CONTROLLER_BUTTON_DPAD_RIGHT) {
-            std::printf("[Gamepad] Button %d pressed, but ignored -> Action: Safety lock is ON\n", static_cast<int>(btn));
+            AddLog("[Gamepad] Ignored button press -> Safety lock is ON");
           }
         }
       }
@@ -859,7 +881,7 @@ int main() {
     if (use_gamepad && gamepad) {
       yaw = axis_to_wire(
           SDL_GameControllerGetAxis(gamepad, SDL_CONTROLLER_AXIS_LEFTX));
-      throttle = axis_to_wire(
+      throttle = throttle_to_wire(
           SDL_GameControllerGetAxis(gamepad, SDL_CONTROLLER_AXIS_LEFTY), true);
       roll = axis_to_wire(
           SDL_GameControllerGetAxis(gamepad, SDL_CONTROLLER_AXIS_RIGHTX));
@@ -1246,6 +1268,14 @@ int main() {
       ImGui::TextColored({0.4f, 0.8f, 0.4f, 1.0f}, "CONNECTION");
       ImGui::Separator();
       ImGui::Text("Video: %s", stats.video_seen ? "RECEIVING" : "NO SIGNAL");
+      ImGui::Spacing();
+      ImGui::Spacing();
+
+      ImGui::TextColored({0.4f, 0.8f, 0.4f, 1.0f}, "ACTION LOG");
+      ImGui::Separator();
+      for (const auto& log : ui_logs) {
+        ImGui::TextWrapped("%s", log.c_str());
+      }
     }
     ImGui::EndChild();
     } // end if (view_mode != 2)
